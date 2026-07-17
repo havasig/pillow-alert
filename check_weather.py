@@ -18,28 +18,26 @@ times  = data["hourly"]["time"]
 precip = data["hourly"]["precipitation"]
 wind   = data["hourly"]["windspeed_10m"]
 
-# Determine if we're in the AM or PM run
 now_utc = datetime.now(timezone.utc)
 is_morning = now_utc.hour < 12
 
-# Morning run: check today's remaining hours (next 12h)
-# Evening run: check tomorrow's hours
-budapest_offset = timedelta(hours=2)  # adjust to +1 in winter if needed
+budapest_offset = timedelta(hours=2)
 now_local = now_utc + budapest_offset
+now_naive = now_local.replace(tzinfo=None)  # strip timezone for comparison
 
 if is_morning:
-    check_start = now_local.replace(minute=0, second=0, microsecond=0)
+    check_start = now_naive.replace(minute=0, second=0, microsecond=0)
     check_end   = check_start + timedelta(hours=12)
     window_label = "today"
 else:
-    tomorrow = (now_local + timedelta(days=1)).date()
+    tomorrow = (now_naive + timedelta(days=1)).date()
     check_start = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0)
     check_end   = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59)
     window_label = "tomorrow"
 
 alerts = []
 for i, t in enumerate(times):
-    dt = datetime.fromisoformat(t)
+    dt = datetime.fromisoformat(t)  # naive, matches check_start/check_end now
     if check_start <= dt <= check_end:
         hour_label = dt.strftime("%H:%M")
         if precip[i] > 0:
