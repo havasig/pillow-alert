@@ -16,5 +16,4 @@ jobs:
       - run: python check_weather.py
         env:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
-          PUSHOVER_USER1: ${{ secrets.PUSHOVER_USER1 }}
-          PUSHOVER_USER2: ${{ secrets.PUSHOVER_USER2 }}
+          PUSHOVER_USER_HAVAG: ${{ secrets.PUSHOVER_USER_HAVAG }}
