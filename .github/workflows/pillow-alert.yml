@@ -1,7 +1,7 @@
 name: Pillow Alert
 on:
   schedule:
-    - cron: '0 21 * * *'  # 8 PM Budapest time (UTC+2 in summer, UTC+1 in winter)
+    - cron: '0 7,19 * * *'  # 9 AM and 9 PM Budapest time (UTC+2 summer)
   workflow_dispatch:        # allows manual trigger from GitHub UI
 
 jobs:
