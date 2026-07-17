@@ -17,7 +17,7 @@ precip = data["hourly"]["precipitation"][24:48]
 wind   = data["hourly"]["windspeed_10m"][24:48]
 
 rain_expected = any(p > 0 for p in precip)
-wind_expected = any(w > 40 for w in wind)
+wind_expected = any(w > 0 for w in wind)
 
 if rain_expected or wind_expected:
     reasons = []
