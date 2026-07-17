@@ -1,0 +1,20 @@
+name: Pillow Alert
+on:
+  schedule:
+    - cron: '0 21 * * *'  # 8 PM Budapest time (UTC+2 in summer, UTC+1 in winter)
+  workflow_dispatch:        # allows manual trigger from GitHub UI
+
+jobs:
+  check-weather:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - run: python check_weather.py
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER1: ${{ secrets.PUSHOVER_USER1 }}
+          PUSHOVER_USER2: ${{ secrets.PUSHOVER_USER2 }}
