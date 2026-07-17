@@ -26,7 +26,7 @@ if rain_expected or wind_expected:
     message = "Get the pillows in! " + " · ".join(reasons)
 
     token = os.environ["PUSHOVER_TOKEN"]
-    for key_name in ["PUSHOVER_USER1", "PUSHOVER_USER2"]:
+    for key_name in ["PUSHOVER_USER_HAVAG"]:
         user_key = os.environ.get(key_name)
         if user_key:
             requests.post("https://api.pushover.net/1/messages.json", data={
