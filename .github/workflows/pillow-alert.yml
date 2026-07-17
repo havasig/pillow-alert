@@ -17,3 +17,4 @@ jobs:
         env:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           PUSHOVER_USER_HAVAG: ${{ secrets.PUSHOVER_USER_HAVAG }}
+          PUSHOVER_USER_ENCI: ${{ secrets.PUSHOVER_USER_ENCI }}
