@@ -42,13 +42,13 @@ for i, t in enumerate(times):
         hour_label = dt.strftime("%H:%M")
         if precip[i] > 0:
             alerts.append(f"🌧 Rain ({precip[i]:.1f}mm) at {hour_label}")
-        if wind[i] > 0:
+        if wind[i] > 35:
             alerts.append(f"💨 Wind ({wind[i]:.0f} km/h) at {hour_label}")
 
 if alerts:
     message = f"Get the pillows in {window_label}!\n" + "\n".join(alerts)
     token = os.environ["PUSHOVER_TOKEN"]
-    for key_name in ["PUSHOVER_USER_HAVAG"]:
+    for key_name in ["PUSHOVER_USER_HAVAG", "PUSHOVER_USER_ENCI"]:
         user_key = os.environ.get(key_name)
         if user_key:
             requests.post("https://api.pushover.net/1/messages.json", data={
