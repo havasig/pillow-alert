@@ -62,7 +62,9 @@ if all_alerts:
         if user_key:
             requests.post("https://api.pushover.net/1/messages.json", data={
                 "token": token, "user": user_key, "message": message,
-                "title": "🛋 Párna Riasztás"
+                "title": "🛋 Párna Riasztás",
+                "url": "weather://",
+                "url_title": "Megnyitás Weather-ben"
             })
     print("Riasztás elküldve:\n", message)
 else:
