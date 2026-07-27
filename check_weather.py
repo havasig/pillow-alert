@@ -36,20 +36,26 @@ else:
     check_end   = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59)
     window_label = "holnap"
 
-alerts = []
+rain_events = []
+wind_events = []
+
 for i, t in enumerate(times):
     dt = datetime.fromisoformat(t)
     if check_start <= dt <= check_end:
         hour_label = dt.strftime("%H:%M")
         if precip[i] > 0:
-            alerts.append(f"🌧 Eső ({precip[i]:.1f}mm) {hour_label}-kor")
+            rain_events.append((precip[i], f"🌧 Eső ({precip[i]:.1f}mm) {hour_label}-kor"))
         if gusts[i] > 35:
-            alerts.append(f"💨 Széllökés ({gusts[i]:.0f} km/h) {hour_label}-kor")
+            wind_events.append((gusts[i], f"💨 Széllökés ({gusts[i]:.0f} km/h) {hour_label}-kor"))
         elif wind[i] > 35:
-            alerts.append(f"🌬 Szél ({wind[i]:.0f} km/h) {hour_label}-kor")
+            wind_events.append((wind[i], f"🌬 Szél ({wind[i]:.0f} km/h) {hour_label}-kor"))
 
-if alerts:
-    message = f"Vidd be a párnákat {window_label}!\n" + "\n".join(alerts)
+top_rain = [msg for _, msg in sorted(rain_events, key=lambda x: x[0], reverse=True)[:1]]
+top_wind = [msg for _, msg in sorted(wind_events, key=lambda x: x[0], reverse=True)[:2]]
+all_alerts = top_wind + top_rain
+
+if all_alerts:
+    message = f"Vidd be a párnákat {window_label}!\n" + "\n".join(all_alerts)
     token = os.environ["PUSHOVER_TOKEN"]
     for key_name in ["PUSHOVER_USER_HAVAG", "PUSHOVER_USER_ENCI"]:
         user_key = os.environ.get(key_name)
