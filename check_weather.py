@@ -7,7 +7,7 @@ r = requests.get(
     "https://api.open-meteo.com/v1/forecast",
     params={
         "latitude": LAT, "longitude": LON,
-        "hourly": "precipitation,windspeed_10m",
+        "hourly": "precipitation,windspeed_10m,windgusts_10m",
         "forecast_days": 2,
         "timezone": "Europe/Budapest"
     }
@@ -17,44 +17,47 @@ data = r.json()
 times  = data["hourly"]["time"]
 precip = data["hourly"]["precipitation"]
 wind   = data["hourly"]["windspeed_10m"]
+gusts  = data["hourly"]["windgusts_10m"]
 
 now_utc = datetime.now(timezone.utc)
 is_morning = now_utc.hour < 12
 
 budapest_offset = timedelta(hours=2)
 now_local = now_utc + budapest_offset
-now_naive = now_local.replace(tzinfo=None)  # strip timezone for comparison
+now_naive = now_local.replace(tzinfo=None)
 
 if is_morning:
     check_start = now_naive.replace(minute=0, second=0, microsecond=0)
     check_end   = check_start + timedelta(hours=12)
-    window_label = "today"
+    window_label = "ma"
 else:
     tomorrow = (now_naive + timedelta(days=1)).date()
     check_start = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0)
     check_end   = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59)
-    window_label = "tomorrow"
+    window_label = "holnap"
 
 alerts = []
 for i, t in enumerate(times):
-    dt = datetime.fromisoformat(t)  # naive, matches check_start/check_end now
+    dt = datetime.fromisoformat(t)
     if check_start <= dt <= check_end:
         hour_label = dt.strftime("%H:%M")
         if precip[i] > 0:
-            alerts.append(f"🌧 Rain ({precip[i]:.1f}mm) at {hour_label}")
-        if wind[i] > 35:
-            alerts.append(f"💨 Wind ({wind[i]:.0f} km/h) at {hour_label}")
+            alerts.append(f"🌧 Eső ({precip[i]:.1f}mm) {hour_label}-kor")
+        if gusts[i] > 35:
+            alerts.append(f"💨 Széllökés ({gusts[i]:.0f} km/h) {hour_label}-kor")
+        elif wind[i] > 35:
+            alerts.append(f"🌬 Szél ({wind[i]:.0f} km/h) {hour_label}-kor")
 
 if alerts:
-    message = f"Get the pillows in {window_label}!\n" + "\n".join(alerts)
+    message = f"Vidd be a párnákat {window_label}!\n" + "\n".join(alerts)
     token = os.environ["PUSHOVER_TOKEN"]
     for key_name in ["PUSHOVER_USER_HAVAG", "PUSHOVER_USER_ENCI"]:
         user_key = os.environ.get(key_name)
         if user_key:
             requests.post("https://api.pushover.net/1/messages.json", data={
                 "token": token, "user": user_key, "message": message,
-                "title": "🛋 Pillow Alert"
+                "title": "🛋 Párna Riasztás"
             })
-    print("Alert sent:\n", message)
+    print("Riasztás elküldve:\n", message)
 else:
-    print(f"No alert needed for {window_label}.")
+    print(f"Nincs riasztás {window_label}ra.")
