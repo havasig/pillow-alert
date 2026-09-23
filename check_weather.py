@@ -1,7 +1,11 @@
 import requests, os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 LAT, LON = 47.45804861714617, 19.054431492854786
+BUDAPEST = ZoneInfo("Europe/Budapest")
+MORNING_CRON = "0 5 * * *"
+EVENING_CRON = "0 17 * * *"
 
 r = requests.get(
     "https://api.open-meteo.com/v1/forecast",
@@ -19,12 +23,17 @@ precip = data["hourly"]["precipitation"]
 wind   = data["hourly"]["windspeed_10m"]
 gusts  = data["hourly"]["windgusts_10m"]
 
-now_utc = datetime.now(timezone.utc)
-is_morning = now_utc.hour < 12
-
-budapest_offset = timedelta(hours=2)
-now_local = now_utc + budapest_offset
+now_local = datetime.now(BUDAPEST)
 now_naive = now_local.replace(tzinfo=None)
+
+triggering_cron = os.environ.get("GH_SCHEDULE", "")
+if triggering_cron == MORNING_CRON:
+    is_morning = True
+elif triggering_cron == EVENING_CRON:
+    is_morning = False
+else:
+    # Manual trigger (workflow_dispatch) or unknown: fall back to local time of day.
+    is_morning = now_local.hour < 12
 
 if is_morning:
     check_start = now_naive.replace(minute=0, second=0, microsecond=0)

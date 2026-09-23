@@ -1,7 +1,8 @@
 name: Pillow Alert
 on:
   schedule:
-    - cron: '0 5,17 * * *'  # 7 AM and 7 PM Budapest time (UTC+2 summer)
+    - cron: '0 5 * * *'   # ~7 AM Budapest time (morning run)
+    - cron: '0 17 * * *'  # ~7 PM Budapest time (evening run)
   workflow_dispatch:        # allows manual trigger from GitHub UI
 
 jobs:
@@ -18,3 +19,4 @@ jobs:
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           PUSHOVER_USER_HAVAG: ${{ secrets.PUSHOVER_USER_HAVAG }}
           PUSHOVER_USER_ENCI: ${{ secrets.PUSHOVER_USER_ENCI }}
+          GH_SCHEDULE: ${{ github.event.schedule }}
