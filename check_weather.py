@@ -7,21 +7,32 @@ BUDAPEST = ZoneInfo("Europe/Budapest")
 MORNING_CRON = "0 5 * * *"
 EVENING_CRON = "0 17 * * *"
 
+# Average across several independent weather models instead of relying on
+# Open-Meteo's "best_match", which reads consistently high on wind gusts
+# for this location compared to the model consensus.
+MODELS = ["icon_seamless", "gfs_seamless", "gem_seamless", "meteofrance_seamless", "ukmo_seamless"]
+
 r = requests.get(
     "https://api.open-meteo.com/v1/forecast",
     params={
         "latitude": LAT, "longitude": LON,
         "hourly": "precipitation,windspeed_10m,windgusts_10m",
         "forecast_days": 2,
-        "timezone": "Europe/Budapest"
+        "timezone": "Europe/Budapest",
+        "models": ",".join(MODELS)
     }
 )
 data = r.json()
 
-times  = data["hourly"]["time"]
-precip = data["hourly"]["precipitation"]
-wind   = data["hourly"]["windspeed_10m"]
-gusts  = data["hourly"]["windgusts_10m"]
+times = data["hourly"]["time"]
+
+def model_average(variable):
+    columns = [data["hourly"][f"{variable}_{model}"] for model in MODELS]
+    return [sum(values) / len(values) for values in zip(*columns)]
+
+precip = model_average("precipitation")
+wind   = model_average("windspeed_10m")
+gusts  = model_average("windgusts_10m")
 
 now_local = datetime.now(BUDAPEST)
 now_naive = now_local.replace(tzinfo=None)
