@@ -20,7 +20,8 @@ r = requests.get(
         "forecast_days": 2,
         "timezone": "Europe/Budapest",
         "models": ",".join(MODELS)
-    }
+    },
+    timeout=30
 )
 data = r.json()
 
@@ -85,7 +86,7 @@ if all_alerts:
                 "title": "🛋 Párna Riasztás",
                 "url": "weather://",
                 "url_title": "Megnyitás Weather-ben"
-            })
+            }, timeout=15)
     print("Riasztás elküldve:\n", message)
 else:
     print(f"Nincs riasztás {window_label}ra.")
