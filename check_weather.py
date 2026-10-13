@@ -1,16 +1,8 @@
 import requests, os
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 
 LAT, LON = 47.45804861714617, 19.054431492854786
-BUDAPEST = ZoneInfo("Europe/Budapest")
-MORNING_CRON = "0 5 * * *"
-EVENING_CRON = "0 17 * * *"
-
-# Average across several independent weather models instead of relying on
-# Open-Meteo's "best_match", which reads consistently high on wind gusts
-# for this location compared to the model consensus.
-MODELS = ["icon_seamless", "gfs_seamless", "gem_seamless", "meteofrance_seamless", "ukmo_seamless"]
+BUDAPEST_OFFSET = timedelta(hours=2)
 
 r = requests.get(
     "https://api.open-meteo.com/v1/forecast",
@@ -18,34 +10,22 @@ r = requests.get(
         "latitude": LAT, "longitude": LON,
         "hourly": "precipitation,windspeed_10m,windgusts_10m",
         "forecast_days": 2,
-        "timezone": "Europe/Budapest",
-        "models": ",".join(MODELS)
+        "timezone": "Europe/Budapest"
     },
     timeout=30
 )
 data = r.json()
 
-times = data["hourly"]["time"]
+times  = data["hourly"]["time"]
+precip = data["hourly"]["precipitation"]
+wind   = data["hourly"]["windspeed_10m"]
+gusts  = data["hourly"]["windgusts_10m"]
 
-def model_average(variable):
-    columns = [data["hourly"][f"{variable}_{model}"] for model in MODELS]
-    return [sum(values) / len(values) for values in zip(*columns)]
+now_utc = datetime.now(timezone.utc)
+is_morning = now_utc.hour < 12
 
-precip = model_average("precipitation")
-wind   = model_average("windspeed_10m")
-gusts  = model_average("windgusts_10m")
-
-now_local = datetime.now(BUDAPEST)
+now_local = now_utc + BUDAPEST_OFFSET
 now_naive = now_local.replace(tzinfo=None)
-
-triggering_cron = os.environ.get("GH_SCHEDULE", "")
-if triggering_cron == MORNING_CRON:
-    is_morning = True
-elif triggering_cron == EVENING_CRON:
-    is_morning = False
-else:
-    # Manual trigger (workflow_dispatch) or unknown: fall back to local time of day.
-    is_morning = now_local.hour < 12
 
 if is_morning:
     check_start = now_naive.replace(minute=0, second=0, microsecond=0)
@@ -57,23 +37,52 @@ else:
     check_end   = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59)
     window_label = "holnap"
 
-rain_events = []
-wind_events = []
-
+# Collect hourly values in the window
+window = []
 for i, t in enumerate(times):
     dt = datetime.fromisoformat(t)
     if check_start <= dt <= check_end:
-        hour_label = dt.strftime("%H:%M")
-        if precip[i] > 0:
-            rain_events.append((precip[i], f"🌧 Eső ({precip[i]:.1f}mm) {hour_label}-kor"))
-        if gusts[i] > 35:
-            wind_events.append((gusts[i], f"💨 Széllökés ({gusts[i]:.0f} km/h) {hour_label}-kor"))
-        elif wind[i] > 35:
-            wind_events.append((wind[i], f"🌬 Szél ({wind[i]:.0f} km/h) {hour_label}-kor"))
+        window.append((dt, precip[i], wind[i], gusts[i]))
 
-top_rain = [msg for _, msg in sorted(rain_events, key=lambda x: x[0], reverse=True)[:1]]
+# --- Rain: group consecutive rainy hours into periods, keep the heaviest ---
+rain_periods = []
+period_start = None
+period_total = 0.0
+period_hours = 0
+
+for dt, p, w, g in window:
+    if p > 0:
+        if period_start is None:
+            period_start = dt
+        period_total += p
+        period_hours += 1
+    else:
+        if period_start is not None:
+            rain_periods.append((period_total, period_start, period_hours))
+            period_start = None
+            period_total = 0.0
+            period_hours = 0
+if period_start is not None:
+    rain_periods.append((period_total, period_start, period_hours))
+
+rain_alerts = []
+if rain_periods:
+    total, start, hours = max(rain_periods, key=lambda x: x[0])
+    duration = f"{hours} órán át" if hours > 1 else "1 órán át"
+    rain_alerts.append(f"🌧 Eső {start.strftime('%H:%M')}-tól {total:.1f}mm {duration}")
+
+# --- Wind: top 2 individual hours by gust or sustained ---
+wind_events = []
+for dt, p, w, g in window:
+    hour_label = dt.strftime("%H:%M")
+    if g > 35:
+        wind_events.append((g, f"💨 Széllökés ({g:.0f} km/h) {hour_label}-kor"))
+    elif w > 35:
+        wind_events.append((w, f"🌬 Szél ({w:.0f} km/h) {hour_label}-kor"))
+
 top_wind = [msg for _, msg in sorted(wind_events, key=lambda x: x[0], reverse=True)[:2]]
-all_alerts = top_wind + top_rain
+
+all_alerts = top_wind + rain_alerts
 
 if all_alerts:
     message = f"Vidd be a párnákat {window_label}!\n" + "\n".join(all_alerts)
