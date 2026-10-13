@@ -67,7 +67,7 @@ if period_start is not None:
 
 rain_alerts = []
 if rain_periods:
-    total, start, hours = max(rain_periods, key=lambda x: x[0])
+    total, start, hours = min(rain_periods, key=lambda x: x[1])
     duration = f"{hours} órán át" if hours > 1 else "1 órán át"
     rain_alerts.append(f"🌧 Eső {start.strftime('%H:%M')}-tól {total:.1f}mm {duration}")
 
