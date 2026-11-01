@@ -17,7 +17,7 @@ Naponta kétszer (9:00 és 21:00) egy GitHub Actions workflow lekéri az időjá
 | Széllökés | > 35 km/h |
 | Alap szél | > 35 km/h |
 
-Az értesítés tartalmazza a legsúlyosabb 2 szél/lökés eseményt (időponttal), valamint a legerősebb esőszakaszt (kezdés, összmennyiség, időtartam).
+Az értesítés tartalmazza a legsúlyosabb 2 szél/lökés eseményt (időponttal), valamint az eső kezdési idejét és a vizsgált időszak teljes csapadékmennyiségét (pl. „Csapadék várható ekkor: 14:00, összesen 50.3 mm”).
 
 ## Technológiák
 
