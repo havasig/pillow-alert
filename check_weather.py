@@ -44,32 +44,13 @@ for i, t in enumerate(times):
     if check_start <= dt <= check_end:
         window.append((dt, precip[i], wind[i], gusts[i]))
 
-# --- Rain: group consecutive rainy hours into periods, keep the heaviest ---
-rain_periods = []
-period_start = None
-period_total = 0.0
-period_hours = 0
-
-for dt, p, w, g in window:
-    if p > 0:
-        if period_start is None:
-            period_start = dt
-        period_total += p
-        period_hours += 1
-    else:
-        if period_start is not None:
-            rain_periods.append((period_total, period_start, period_hours))
-            period_start = None
-            period_total = 0.0
-            period_hours = 0
-if period_start is not None:
-    rain_periods.append((period_total, period_start, period_hours))
-
+# --- Rain: first rainy hour + total precipitation over the whole window ---
 rain_alerts = []
-if rain_periods:
-    total, start, hours = min(rain_periods, key=lambda x: x[1])
-    duration = f"{hours} órán át" if hours > 1 else "1 órán át"
-    rain_alerts.append(f"🌧 Eső {start.strftime('%H:%M')}-tól {total:.1f}mm {duration}")
+rainy = [(dt, p) for dt, p, w, g in window if p > 0]
+if rainy:
+    start = rainy[0][0]
+    total = sum(p for _, p in rainy)
+    rain_alerts.append(f"🌧 Csapadék várható ekkor: {start.strftime('%H:%M')}, összesen {total:.1f} mm")
 
 # --- Wind: top 2 individual hours by gust or sustained ---
 wind_events = []
